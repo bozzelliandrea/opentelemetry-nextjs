@@ -6,9 +6,13 @@ import { CompressionAlgorithm } from "@opentelemetry/otlp-exporter-base";
 import { diag, DiagConsoleLogger, DiagLogLevel } from "@opentelemetry/api";
 import { OTLPTraceExporter } from "@opentelemetry/exporter-trace-otlp-grpc";
 import { PeriodicExportingMetricReader } from "@opentelemetry/sdk-metrics";
-import { W3CTraceContextPropagator } from "@opentelemetry/core";
+import {
+  CompositePropagator,
+  W3CTraceContextPropagator,
+} from "@opentelemetry/core";
+import { CustomHeaderPropagator } from "./custom/CustomHeaderPropagator";
 
-diag.setLogger(new DiagConsoleLogger(), DiagLogLevel.DEBUG);
+diag.setLogger(new DiagConsoleLogger(), DiagLogLevel.INFO);
 
 const OTEL_COLLECTOR_URL = "http://localhost:4317";
 const OTEL_SERVICE_NAME = "opentelemetry-nextjs-backend";
@@ -39,7 +43,12 @@ if (!OTEL_COLLECTOR_URL) {
           })
         ),
       ],
-      textMapPropagator: new W3CTraceContextPropagator(),
+      textMapPropagator: new CompositePropagator({
+        propagators: [
+          new CustomHeaderPropagator("next-webapp"),
+          new W3CTraceContextPropagator(),
+        ],
+      }),
       instrumentations: [
         getNodeAutoInstrumentations({
           // disable `instrumentation-fs` prevent trace bloating

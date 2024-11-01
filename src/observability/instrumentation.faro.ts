@@ -5,11 +5,12 @@ import {
   WebVitalsInstrumentation,
   type Faro,
 } from "@grafana/faro-react";
-import { W3CTraceContextPropagator } from "@opentelemetry/core";
+import { CompositePropagator, W3CTraceContextPropagator } from "@opentelemetry/core";
 import { TracingInstrumentation } from "@grafana/faro-web-tracing";
 import { DocumentLoadInstrumentation } from "@opentelemetry/instrumentation-document-load";
 import { FetchInstrumentation } from "@opentelemetry/instrumentation-fetch";
 import { UserInteractionInstrumentation } from "@opentelemetry/instrumentation-user-interaction";
+import { CustomHeaderPropagator } from "./custom/CustomHeaderPropagator";
 
 export default function buildFaroInstrumentation(): Faro {
   const faroCollectorUrl: string = "http://localhost:12347/collect";
@@ -30,7 +31,12 @@ export default function buildFaroInstrumentation(): Faro {
       new ErrorsInstrumentation(),
       new WebVitalsInstrumentation(),
       new TracingInstrumentation({
-        propagator: new W3CTraceContextPropagator(),
+        propagator: new CompositePropagator({
+          propagators: [
+            new CustomHeaderPropagator("next-webapp"),
+            new W3CTraceContextPropagator(),
+          ],
+        }),
         instrumentations: [
           new DocumentLoadInstrumentation(),
           new FetchInstrumentation({
