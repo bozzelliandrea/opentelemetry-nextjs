@@ -1,10 +1,10 @@
 import { NodeSDK, logs } from "@opentelemetry/sdk-node";
-import { OTLPMetricExporter } from "@opentelemetry/exporter-metrics-otlp-grpc";
-import { OTLPLogExporter } from "@opentelemetry/exporter-logs-otlp-grpc";
+import { OTLPMetricExporter } from "@opentelemetry/exporter-metrics-otlp-http";
+import { OTLPLogExporter } from "@opentelemetry/exporter-logs-otlp-http";
+import { OTLPTraceExporter } from "@opentelemetry/exporter-trace-otlp-http";
 import { getNodeAutoInstrumentations } from "@opentelemetry/auto-instrumentations-node";
 import { CompressionAlgorithm } from "@opentelemetry/otlp-exporter-base";
 import { diag, DiagConsoleLogger, DiagLogLevel } from "@opentelemetry/api";
-import { OTLPTraceExporter } from "@opentelemetry/exporter-trace-otlp-grpc";
 import { PeriodicExportingMetricReader } from "@opentelemetry/sdk-metrics";
 import {
   CompositePropagator,
@@ -12,34 +12,51 @@ import {
 } from "@opentelemetry/core";
 import { CustomHeaderPropagator } from "./custom/CustomHeaderPropagator";
 
-diag.setLogger(new DiagConsoleLogger(), DiagLogLevel.INFO);
+diag.setLogger(new DiagConsoleLogger(), DiagLogLevel.DEBUG);
 
-const OTEL_COLLECTOR_URL = "http://localhost:4317";
+const OTEL_COLLECTOR_URL = "http://localhost:4318";
 const OTEL_SERVICE_NAME = "opentelemetry-nextjs-backend";
+
+export async function wrapper() {
+  console.log("Function Called!");
+
+  return "Bearer <your token>";
+}
 
 if (!OTEL_COLLECTOR_URL) {
   console.warn(
     "OTEL_COLLECTOR_URL not set. Skipping OpenTelemetry instrumentation."
   );
 } else {
+  console.log(typeof wrapper);
+  console.log("Is Func: ", wrapper instanceof Function);
   try {
     const sdk = new NodeSDK({
       serviceName: OTEL_SERVICE_NAME,
       traceExporter: new OTLPTraceExporter({
-        url: `${OTEL_COLLECTOR_URL}`,
+        url: `${OTEL_COLLECTOR_URL}/v1/traces`,
         compression: CompressionAlgorithm.GZIP,
+        headers: {
+          Authorization: wrapper,
+        },
       }),
       metricReader: new PeriodicExportingMetricReader({
         exporter: new OTLPMetricExporter({
-          url: `${OTEL_COLLECTOR_URL}`,
+          url: `${OTEL_COLLECTOR_URL}/v1/metrics`,
           compression: CompressionAlgorithm.GZIP,
+          headers: {
+            Authorization: wrapper,
+          },
         }),
       }),
       logRecordProcessors: [
         new logs.SimpleLogRecordProcessor(
           new OTLPLogExporter({
-            url: `${OTEL_COLLECTOR_URL}`,
+            url: `${OTEL_COLLECTOR_URL}/v1/logs`,
             compression: CompressionAlgorithm.GZIP,
+            headers: {
+              Authorization: wrapper,
+            },
           })
         ),
       ],
