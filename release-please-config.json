@@ -1,4 +1,5 @@
 {
+  "pull-request-title-pattern": "chore(auto-release): release ${component} ${version}",
   "packages": {
     ".": {
       "changelog-path": "CHANGELOG.md",
